@@ -34,9 +34,7 @@ const actions = {
   login({ commit }, userInfo) {
     const { username, password } = userInfo
     return new Promise((resolve, reject) => {
-      console.log('login---')
       login({ username: username.trim(), password: password }).then(response => {
-        console.log(response)
         const { data } = response
         commit('SET_TOKEN', data.token)
         setToken(data.token)
@@ -51,8 +49,6 @@ const actions = {
   getInfo({ commit, state }) {
     return new Promise((resolve, reject) => {
       getInfo(state.token).then(response => {
-        console.log('getInfo---')
-        console.log(response)
         const { data } = response
 
         if (!data) {
@@ -62,8 +58,6 @@ const actions = {
         const userInfo = data.userInfo
 
         const { roles, username, avatar, introduction } = userInfo
-        console.log('roles---')
-        console.log(roles)
         // roles must be a non-empty array
         if (!roles || roles.length <= 0) {
           reject('getInfo: roles must be a non-null array!')

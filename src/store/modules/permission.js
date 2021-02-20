@@ -58,9 +58,7 @@ const actions = {
     return new Promise((resolve, reject) => {
       let accessedRoutes = []
       // 获取菜单树
-      console.log('getMenuTree---')
       getMenuTree().then(res => {
-        console.log(res)
         const { data } = res
         const menuTree = data.menuTree
         accessedRoutes = getRoutesFromMenuTree(menuTree)
