@@ -75,6 +75,7 @@
 
 <script>
 import SocialSign from './components/SocialSignin'
+import JSEncrypt from 'jsencrypt'
 
 export default {
   name: 'Login',
@@ -97,6 +98,12 @@ export default {
         password: [{ required: true, trigger: 'blur', validator: validatePassword }]
       },
       passwordType: 'password',
+      publicKey: `-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDbOYcY8HbDaNM9ooYXoc9s+R5o
+R05ZL1BsVKadQBgOVH/kj7PQuD+ABEFVgB6rJNi287fRuZeZR+MCoG72H+AYsAhR
+sEaB5SuI7gDEstXuTyjhx5bz0wUujbDK4VMgRfPO6MQo+A0c95OadDEvEQDG3KBQ
+wLXapv+ZfsjG7NgdawIDAQAB
+-----END PUBLIC KEY-----`,
       capsTooltip: false,
       loading: false,
       showDialog: false,
@@ -149,7 +156,14 @@ export default {
       this.$refs.loginForm.validate(valid => {
         if (valid) {
           this.loading = true
-          this.$store.dispatch('user/login', this.loginForm)
+          // 密码RSA加密处理
+          const encryptor = new JSEncrypt()
+          // 设置公钥
+          encryptor.setPublicKey(this.publicKey)
+          // 加密密码
+          const encPassword = encryptor.encrypt(this.loginForm.password)
+          const encLoginForm = { username: this.loginForm.username, password: encPassword }
+          this.$store.dispatch('user/login', encLoginForm)
             .then(() => {
               this.$router.push({ path: this.redirect || '/', query: this.otherQuery })
               this.loading = false
