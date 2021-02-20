@@ -129,7 +129,6 @@ wLXapv+ZfsjG7NgdawIDAQAB
       })
     },
     handleLogin() {
-      console.log('登录--')
       this.$refs.loginForm.validate(valid => {
         if (valid) {
           this.loading = true

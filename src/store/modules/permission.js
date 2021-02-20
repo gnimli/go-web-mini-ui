@@ -7,14 +7,16 @@ export const getRoutesFromMenuTree = (menuTree) => {
   menuTree.forEach(menu => {
     if (menu.children && menu.children.length > 0) {
       menu.children = getRoutesFromMenuTree(menu.children)
-    } else {
-      // 这里需要清理children, 否则右侧会显示下拉图标
-      delete menu.children
     }
+    // else {
+    //   // 这里需要清理children, 否则右侧会显示下拉图标
+    //   delete menu.children
+    // }
     routes.push({
       path: menu.path,
       name: menu.name,
       component: loadComponent(menu.component),
+      hidden: menu.hidden === 1,
       redirect: menu.redirect,
       alwaysShow: menu.alwaysShow === 1,
       children: menu.children,
@@ -22,7 +24,6 @@ export const getRoutesFromMenuTree = (menuTree) => {
         name: menu.name,
         title: menu.title,
         icon: menu.icon,
-        hidden: menu.hidden === 1,
         breadcrumb: menu.breadcrumb === 1,
         activeMenu: menu.activeMenu
       }
