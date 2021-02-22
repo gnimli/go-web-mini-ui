@@ -1,5 +1,5 @@
 import { constantRoutes } from '@/router'
-import { getMenuTree } from '@/api/system/menu'
+import { getUserMenuTreeByUserId } from '@/api/system/menu'
 import Layout from '@/layout'
 
 export const getRoutesFromMenuTree = (menuTree) => {
@@ -24,6 +24,7 @@ export const getRoutesFromMenuTree = (menuTree) => {
         name: menu.name,
         title: menu.title,
         icon: menu.icon,
+        noCache: menu.noCache === 1,
         breadcrumb: menu.breadcrumb === 1,
         activeMenu: menu.activeMenu
       }
@@ -55,11 +56,11 @@ const mutations = {
 }
 
 const actions = {
-  generateRoutes({ commit }, roles) {
+  generateRoutes({ commit }, userinfo) {
     return new Promise((resolve, reject) => {
       let accessedRoutes = []
       // 获取菜单树
-      getMenuTree().then(res => {
+      getUserMenuTreeByUserId(userinfo.id).then(res => {
         const { data } = res
         const menuTree = data.menuTree
         accessedRoutes = getRoutesFromMenuTree(menuTree)

@@ -185,8 +185,6 @@ export default {
     async getTableData() {
       this.loading = true
       const res = await getApis(this.params)
-      console.log('getApis---')
-      console.log(res)
 
       if (res.code !== 200) {
         this.loading = false
@@ -210,7 +208,6 @@ export default {
 
     // 修改
     update(row) {
-      console.log(row)
       this.dialogFormData.ID = row.ID
       this.dialogFormData.path = row.path
       this.dialogFormData.category = row.category
@@ -271,7 +268,11 @@ export default {
             })
           }
         } else {
-          console.log('error submit!!')
+          this.$message({
+            showClose: true,
+            message: '表单校验失败',
+            type: 'success'
+          })
           return false
         }
       })
@@ -320,7 +321,6 @@ export default {
 
     // 表格多选
     handleSelectionChange(val) {
-      console.log(val)
       this.multipleSelection = val
     },
 
