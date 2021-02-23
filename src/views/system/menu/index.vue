@@ -216,8 +216,6 @@ export default {
     async getTableData() {
       this.loading = true
       const res = await getMenuTree()
-      console.log('getMenuTree---')
-      console.log(res)
 
       if (res.code !== 200) {
         this.loading = false
@@ -270,9 +268,6 @@ export default {
           this.dialogFormData.hidden = this.dialogFormData.hidden === '是' ? 1 : 2
           this.dialogFormData.noCache = this.dialogFormData.noCache === '是' ? 2 : 1
 
-          console.log('this.dialogFormData---')
-          console.log(this.dialogFormData)
-
           if (this.dialogFormData.ID === this.dialogFormData.parentId) {
             this.loading = false
             return this.$message({
@@ -283,9 +278,6 @@ export default {
           }
 
           const dialogFormDataCopy = { ...this.dialogFormData, parentId: this.treeselectValue }
-
-          console.log('this.dialogFormDataCopy---')
-          console.log(dialogFormDataCopy)
 
           if (this.dialogType === 'create') {
             const { code, message } = await createMenu(dialogFormDataCopy)
@@ -334,7 +326,7 @@ export default {
           this.$message({
             showClose: true,
             message: '表单校验失败',
-            type: 'success'
+            type: 'error'
           })
           return false
         }
@@ -370,11 +362,11 @@ export default {
     // 批量删除
     async batchDelete() {
       this.loading = true
-      const apiIds = []
+      const menuIds = []
       this.multipleSelection.forEach(x => {
-        apiIds.push(x.ID)
+        menuIds.push(x.ID)
       })
-      const { code, message } = await batchDeleteMenuByIds({ menuIds: apiIds })
+      const { code, message } = await batchDeleteMenuByIds({ menuIds: menuIds })
       if (code !== 200) {
         this.loading = false
         return this.$message({
@@ -431,10 +423,7 @@ export default {
         children: node.children
       }
     },
-
     treeselectInput(value) {
-      console.log('treeselectInput-------')
-      console.log(value)
       this.treeselectValue = value
     }
 

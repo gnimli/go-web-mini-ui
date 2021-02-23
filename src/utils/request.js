@@ -99,10 +99,15 @@ service.interceptors.response.use(
   },
   error => {
     console.log('err' + error) // for debug
+    let errorMsg = error.response.data.message
+    if (!errorMsg) {
+      errorMsg = error.message
+    }
     Message({
-      message: error.message,
+      message: errorMsg,
       type: 'error',
-      duration: 5 * 1000
+      duration: 5 * 1000,
+      showClose: true
     })
     return Promise.reject(error)
   }
