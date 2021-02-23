@@ -69,7 +69,7 @@
       />
 
       <el-dialog :title="dialogFormTitle" :visible.sync="dialogFormVisible">
-        <el-form ref="dialogForm" :model="dialogFormData" :rules="dialogFormRules" label-width="120px">
+        <el-form ref="dialogForm" size="small" :model="dialogFormData" :rules="dialogFormRules" label-width="120px">
           <el-form-item label="访问路径" prop="path">
             <el-input v-model.trim="dialogFormData.path" placeholder="访问路径" />
           </el-form-item>

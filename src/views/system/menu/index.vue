@@ -15,13 +15,25 @@
         <el-table-column show-overflow-tooltip prop="title" label="菜单标题" width="150" />
         <el-table-column show-overflow-tooltip prop="name" label="名称" />
         <el-table-column show-overflow-tooltip prop="icon" label="图标" />
-        <el-table-column show-overflow-tooltip prop="path" label="访问路径" />
+        <el-table-column show-overflow-tooltip prop="path" label="路由地址" />
         <el-table-column show-overflow-tooltip prop="component" label="组件路径" />
         <el-table-column show-overflow-tooltip prop="redirect" label="重定向" />
-        <el-table-column show-overflow-tooltip prop="sort" label="排序" />
-        <el-table-column show-overflow-tooltip prop="status" label="禁用" />
-        <el-table-column show-overflow-tooltip prop="hidden" label="隐藏" />
-        <el-table-column show-overflow-tooltip prop="noCache" label="缓存" />
+        <el-table-column show-overflow-tooltip prop="sort" label="排序" align="center" width="80" />
+        <el-table-column show-overflow-tooltip prop="status" label="禁用" align="center" width="80">
+          <template slot-scope="scope">
+            <el-tag size="small" :type="scope.row.status === 1 ? 'success':'danger'">{{ scope.row.status === 1 ? '否':'是' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column show-overflow-tooltip prop="hidden" label="隐藏" align="center" width="80">
+          <template slot-scope="scope">
+            <el-tag size="small" :type="scope.row.hidden === 1 ? 'danger':'success'">{{ scope.row.hidden === 1 ? '是':'否' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column show-overflow-tooltip prop="noCache" label="缓存" align="center" width="80">
+          <template slot-scope="scope">
+            <el-tag size="small" :type="scope.row.noCache === 1 ? 'danger':'success'">{{ scope.row.noCache === 1 ? '否':'是' }}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column show-overflow-tooltip prop="activeMenu" label="高亮菜单" />
         <el-table-column fixed="right" label="操作" align="center" width="120">
           <template slot-scope="scope">
@@ -37,40 +49,77 @@
         </el-table-column>
       </el-table>
 
-      <el-dialog :title="dialogFormTitle" :visible.sync="dialogFormVisible">
-        <el-form ref="dialogForm" :model="dialogFormData" :rules="dialogFormRules" label-width="120px">
+      <el-dialog :title="dialogFormTitle" :visible.sync="dialogFormVisible" width="580px">
+        <el-form ref="dialogForm" :inline="true" size="small" :model="dialogFormData" :rules="dialogFormRules" label-width="80px">
           <el-form-item label="菜单标题" prop="title">
-            <el-input v-model.trim="dialogFormData.title" placeholder="菜单标题" />
+            <el-input v-model.trim="dialogFormData.title" placeholder="菜单标题(title)" style="width: 440px" />
           </el-form-item>
           <el-form-item label="名称" prop="name">
-            <el-input v-model.trim="dialogFormData.name" placeholder="名称" />
-          </el-form-item>
-          <el-form-item label="图标" prop="icon">
-            <el-input v-model.trim="dialogFormData.icon" placeholder="图标" />
-          </el-form-item>
-          <el-form-item label="访问路径" prop="path">
-            <el-input v-model.trim="dialogFormData.path" placeholder="访问路径" />
-          </el-form-item>
-          <el-form-item label="组件路径" prop="component">
-            <el-input v-model.trim="dialogFormData.component" placeholder="组件路径" />
-          </el-form-item>
-          <el-form-item label="重定向" prop="redirect">
-            <el-input v-model.trim="dialogFormData.redirect" placeholder="重定向" />
+            <el-input v-model.trim="dialogFormData.name" placeholder="名称(name)" style="width: 220px" />
           </el-form-item>
           <el-form-item label="排序" prop="sort">
-            <el-input v-model.trim="dialogFormData.sort" placeholder="排序" />
+            <el-input-number v-model.number="dialogFormData.sort" controls-position="right" :min="1" :max="999" />
+          </el-form-item>
+          <el-form-item label="图标" prop="icon">
+            <el-popover
+              placement="bottom-start"
+              width="450"
+              trigger="click"
+              @show="$refs['iconSelect'].reset()"
+            >
+              <IconSelect ref="iconSelect" @selected="selected" />
+              <el-input slot="reference" v-model="dialogFormData.icon" style="width: 440px;" placeholder="点击选择图标" readonly>
+                <svg-icon v-if="dialogFormData.icon" slot="prefix" :icon-class="dialogFormData.icon" class="el-input__icon" style="height: 32px;width: 16px;" />
+                <i v-else slot="prefix" class="el-icon-search el-input__icon" />
+              </el-input>
+            </el-popover>
+          </el-form-item>
+          <el-form-item label="路由地址" prop="path">
+            <el-input v-model.trim="dialogFormData.path" placeholder="路由地址(path)" style="width: 440px" />
+          </el-form-item>
+          <el-form-item label="组件路径" prop="component">
+            <el-input v-model.trim="dialogFormData.component" placeholder="组件路径(component)" style="width: 440px" />
+          </el-form-item>
+          <el-form-item label="重定向" prop="redirect">
+            <el-input v-model.trim="dialogFormData.redirect" placeholder="重定向(redirect)" style="width: 440px" />
           </el-form-item>
           <el-form-item label="禁用" prop="status">
-            <el-input v-model.trim="dialogFormData.status" placeholder="禁用" />
+            <el-radio-group v-model="dialogFormData.status">
+              <el-radio-button label="是" />
+              <el-radio-button label="否" />
+            </el-radio-group>
           </el-form-item>
           <el-form-item label="隐藏" prop="hidden">
-            <el-input v-model.trim="dialogFormData.hidden" placeholder="隐藏" />
+            <el-radio-group v-model="dialogFormData.hidden">
+              <el-radio-button label="是" />
+              <el-radio-button label="否" />
+            </el-radio-group>
           </el-form-item>
           <el-form-item label="缓存" prop="noCache">
-            <el-input v-model.trim="dialogFormData.noCache" placeholder="缓存" />
+            <el-radio-group v-model="dialogFormData.noCache">
+              <el-radio-button label="是" />
+              <el-radio-button label="否" />
+            </el-radio-group>
           </el-form-item>
           <el-form-item label="高亮菜单" prop="activeMenu">
-            <el-input v-model.trim="dialogFormData.activeMenu" placeholder="高亮菜单" />
+            <el-input v-model.trim="dialogFormData.activeMenu" placeholder="高亮菜单(activeMenu)" style="width: 440px" />
+          </el-form-item>
+          <el-form-item label="上级目录" prop="parentId">
+            <!-- <el-cascader
+              v-model="dialogFormData.parentId"
+              :show-all-levels="false"
+              :options="treeselectData"
+              :props="{ checkStrictly: true, label:'title', value:'ID', emitPath:false}"
+              clearable
+              filterable
+            /> -->
+            <treeselect
+              v-model="dialogFormData.parentId"
+              :options="treeselectData"
+              :normalizer="normalizer"
+              style="width:440px"
+              @input="treeselectInput"
+            />
           </el-form-item>
         </el-form>
         <div slot="footer" class="dialog-footer">
@@ -84,15 +133,26 @@
 </template>
 
 <script>
+import IconSelect from '@/components/IconSelect'
+import Treeselect from '@riophae/vue-treeselect'
+import '@riophae/vue-treeselect/dist/vue-treeselect.css'
 import { getMenuTree, createMenu, updateMenuById, batchDeleteMenuByIds } from '@/api/system/menu'
 
 export default {
   name: 'Menu',
+  components: {
+    IconSelect,
+    Treeselect
+  },
   data() {
     return {
       // 表格数据
       tableData: [],
       loading: false,
+
+      // 上级目录数据
+      treeselectData: [],
+      treeselectValue: 0,
 
       // dialog对话框
       dialogFormTitle: '',
@@ -103,13 +163,16 @@ export default {
         name: '',
         icon: '',
         path: '',
-        component: '',
+        component: 'Layout',
         redirect: '',
-        sort: '',
-        status: '',
-        hidden: '',
-        noCache: '',
-        activeMenu: ''
+        sort: 999,
+        status: '否',
+        hidden: '否',
+        noCache: '是',
+        alwaysShow: 2,
+        breadcrumb: 1,
+        activeMenu: '',
+        parentId: 0
       },
       dialogFormRules: {
         title: [
@@ -119,10 +182,6 @@ export default {
         name: [
           { required: true, message: '请输入名称', trigger: 'blur' },
           { min: 1, max: 100, message: '长度在 1 到 100 个字符', trigger: 'blur' }
-        ],
-        icon: [
-          { required: false, message: '请输入图标', trigger: 'blur' },
-          { min: 0, max: 50, message: '长度在 0 到 50 个字符', trigger: 'blur' }
         ],
         path: [
           { required: true, message: '请输入访问路径', trigger: 'blur' },
@@ -135,22 +194,6 @@ export default {
         redirect: [
           { required: false, message: '请输入重定向', trigger: 'blur' },
           { min: 0, max: 100, message: '长度在 0 到 100 个字符', trigger: 'blur' }
-        ],
-        sort: [
-          { required: false, message: '请输入排序', trigger: 'blur' },
-          { min: 1, max: 999, message: '长度在 1 到 999 个字符', trigger: 'blur' }
-        ],
-        status: [
-          { required: true, message: '禁用', trigger: 'blur' },
-          { min: 1, max: 100, message: '长度在 1 到 100 个字符', trigger: 'blur' }
-        ],
-        hidden: [
-          { required: true, message: '隐藏', trigger: 'blur' },
-          { min: 1, max: 100, message: '长度在 1 到 100 个字符', trigger: 'blur' }
-        ],
-        noCache: [
-          { required: true, message: '缓存', trigger: 'blur' },
-          { min: 1, max: 100, message: '长度在 1 到 100 个字符', trigger: 'blur' }
         ],
         activeMenu: [
           { required: false, message: '请输入高亮菜单', trigger: 'blur' },
@@ -169,7 +212,6 @@ export default {
     this.getTableData()
   },
   methods: {
-
     // 获取表格数据
     async getTableData() {
       this.loading = true
@@ -186,6 +228,7 @@ export default {
         })
       }
       this.tableData = res.data.menuTree
+      this.treeselectData = [{ ID: 0, title: '顶级类目', children: res.data.menuTree }]
       this.loading = false
     },
 
@@ -206,10 +249,11 @@ export default {
       this.dialogFormData.component = row.component
       this.dialogFormData.redirect = row.redirect
       this.dialogFormData.sort = row.sort
-      this.dialogFormData.status = row.status
-      this.dialogFormData.hidden = row.hidden
-      this.dialogFormData.noCache = row.noCache
+      this.dialogFormData.status = row.status === 1 ? '否' : '是'
+      this.dialogFormData.hidden = row.hidden === 1 ? '是' : '否'
+      this.dialogFormData.noCache = row.noCache === 1 ? '否' : '是'
       this.dialogFormData.activeMenu = row.activeMenu
+      this.dialogFormData.parentId = row.parentId
 
       this.dialogFormTitle = '修改菜单'
       this.dialogType = 'update'
@@ -221,8 +265,30 @@ export default {
       this.$refs['dialogForm'].validate(async valid => {
         if (valid) {
           this.loading = true
+
+          this.dialogFormData.status = this.dialogFormData.status === '是' ? 2 : 1
+          this.dialogFormData.hidden = this.dialogFormData.hidden === '是' ? 1 : 2
+          this.dialogFormData.noCache = this.dialogFormData.noCache === '是' ? 2 : 1
+
+          console.log('this.dialogFormData---')
+          console.log(this.dialogFormData)
+
+          if (this.dialogFormData.ID === this.dialogFormData.parentId) {
+            this.loading = false
+            return this.$message({
+              showClose: true,
+              message: '不能选择自身作为自己的上级目录',
+              type: 'error'
+            })
+          }
+
+          const dialogFormDataCopy = { ...this.dialogFormData, parentId: this.treeselectValue }
+
+          console.log('this.dialogFormDataCopy---')
+          console.log(dialogFormDataCopy)
+
           if (this.dialogType === 'create') {
-            const { code, message } = await createMenu(this.dialogFormData)
+            const { code, message } = await createMenu(dialogFormDataCopy)
             if (code !== 200) {
               this.loading = false
               return this.$message({
@@ -240,7 +306,7 @@ export default {
               type: 'success'
             })
           } else if (this.dialogType === 'update') {
-            const { code, message } = await updateMenuById(this.dialogFormData.ID, this.dialogFormData)
+            const { code, message } = await updateMenuById(dialogFormDataCopy.ID, dialogFormDataCopy)
             if (code !== 200) {
               this.loading = false
               return this.$message({
@@ -284,10 +350,20 @@ export default {
       this.dialogFormVisible = false
       this.$refs['dialogForm'].resetFields()
       this.dialogFormData = {
+        title: '',
+        name: '',
+        icon: '',
         path: '',
-        category: '',
-        method: '',
-        desc: ''
+        component: 'Layout',
+        redirect: '',
+        sort: 999,
+        status: '否',
+        hidden: '否',
+        noCache: '是',
+        alwaysShow: 2,
+        breadcrumb: 1,
+        activeMenu: '',
+        parentId: 0
       }
     },
 
@@ -340,7 +416,28 @@ export default {
         message: message,
         type: 'success'
       })
+    },
+
+    // 选中图标
+    selected(name) {
+      this.dialogFormData.icon = name
+    },
+
+    // treeselect
+    normalizer(node) {
+      return {
+        id: node.ID,
+        label: node.title,
+        children: node.children
+      }
+    },
+
+    treeselectInput(value) {
+      console.log('treeselectInput-------')
+      console.log(value)
+      this.treeselectValue = value
     }
+
   }
 }
 </script>
