@@ -90,8 +90,8 @@
           </el-form-item>
         </el-form>
         <div slot="footer" class="dialog-footer">
-          <el-button @click="cancelForm()">取 消</el-button>
-          <el-button type="primary" @click="submitForm()">确 定</el-button>
+          <el-button size="mini" @click="cancelForm()">取 消</el-button>
+          <el-button size="mini" :loading="submitLoading" type="primary" @click="submitForm()">确 定</el-button>
         </div>
       </el-dialog>
 
@@ -138,6 +138,7 @@ export default {
       loading: false,
 
       // dialog对话框
+      submitLoading: false,
       dialogFormTitle: '',
       dialogType: '',
       dialogFormVisible: false,
@@ -223,18 +224,18 @@ export default {
     submitForm() {
       this.$refs['dialogForm'].validate(async valid => {
         if (valid) {
-          this.loading = true
+          this.submitLoading = true
           if (this.dialogType === 'create') {
             const { code, message } = await createApi(this.dialogFormData)
+            this.submitLoading = false
             if (code !== 200) {
-              this.loading = false
               return this.$message({
                 showClose: true,
                 message: message,
                 type: 'error'
               })
             }
-            this.loading = false
+
             this.resetForm()
             this.getTableData()
             this.$message({
@@ -244,15 +245,15 @@ export default {
             })
           } else if (this.dialogType === 'update') {
             const { code, message } = await updateApiById(this.dialogFormData.ID, this.dialogFormData)
+            this.submitLoading = false
             if (code !== 200) {
-              this.loading = false
               return this.$message({
                 showClose: true,
                 message: message,
                 type: 'error'
               })
             }
-            this.loading = false
+
             this.resetForm()
             this.getTableData()
             this.$message({
@@ -267,6 +268,7 @@ export default {
               type: 'error'
             })
           }
+          this.submitLoading = false
         } else {
           this.$message({
             showClose: true,

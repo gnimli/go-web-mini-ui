@@ -28,11 +28,10 @@ export function updateRoleById(roleId, data) {
 }
 
 // 获取角色的权限菜单
-export function getRoleMenusById(roleId, params) {
+export function getRoleMenusById(roleId) {
   return request({
     url: '/api/role/menus/get/' + roleId,
-    method: 'get',
-    params
+    method: 'get'
   })
 }
 
@@ -46,11 +45,10 @@ export function updateRoleMenusById(roleId, data) {
 }
 
 // 获取角色的权限接口
-export function getRoleApisById(roleId, params) {
+export function getRoleApisById(roleId) {
   return request({
     url: '/api/role/apis/get/' + roleId,
-    method: 'get',
-    params
+    method: 'get'
   })
 }
 

@@ -37,13 +37,16 @@
         </el-table-column>
         <el-table-column show-overflow-tooltip sortable prop="creator" label="创建人" />
         <el-table-column show-overflow-tooltip sortable prop="desc" label="说明" />
-        <el-table-column fixed="right" label="操作" align="center" width="120">
+        <el-table-column fixed="right" label="操作" align="center" width="140">
           <template slot-scope="scope">
             <el-tooltip content="编辑" effect="dark" placement="top">
               <el-button size="mini" icon="el-icon-edit" circle type="primary" @click="update(scope.row)" />
             </el-tooltip>
-            <el-tooltip class="delete-popover" content="删除" effect="dark" placement="top">
-              <el-popconfirm title="确定删除吗？" @onConfirm="singleDelete(scope.row.ID)">
+            <el-tooltip content="权限" effect="dark" placement="top">
+              <el-button size="mini" icon="el-icon-key" circle type="warning" @click="updatePermission(scope.row.ID)" />
+            </el-tooltip>
+            <el-tooltip content="删除" effect="dark" placement="top">
+              <el-popconfirm style="margin-left:10px" title="确定删除吗？" @onConfirm="singleDelete(scope.row.ID)">
                 <el-button slot="reference" size="mini" icon="el-icon-delete" circle type="danger" />
               </el-popconfirm>
             </el-tooltip>
@@ -84,9 +87,46 @@
             <el-input v-model.trim="dialogFormData.desc" style="width: 420px" type="textarea" placeholder="说明" show-word-limit maxlength="100" />
           </el-form-item>
         </el-form>
-        <div slot="footer" class="dialog-footer">
-          <el-button @click="cancelForm()">取 消</el-button>
-          <el-button type="primary" @click="submitForm()">确 定</el-button>
+        <div slot="footer">
+          <el-button size="mini" @click="cancelForm()">取 消</el-button>
+          <el-button size="mini" :loading="submitLoading" type="primary" @click="submitForm()">确 定</el-button>
+        </div>
+      </el-dialog>
+
+      <el-dialog title="修改权限" :visible.sync="permsDialogVisible" width="580px" custom-class="perms-dialog">
+        <el-tabs>
+          <el-tab-pane>
+            <span slot="label"><svg-icon icon-class="menu1" class-name="role-menu" /> 角色菜单</span>
+            <el-tree
+              ref="roleMenuTree"
+              v-loading="menuTreeLoading"
+              :props="{children: 'children',label: 'title'}"
+              :data="menuTree"
+              show-checkbox
+              node-key="ID"
+              check-strictly
+              :default-checked-keys="defaultCheckedRoleMenu"
+            />
+
+          </el-tab-pane>
+
+          <el-tab-pane>
+            <span slot="label"><svg-icon icon-class="api1" class-name="role-menu" /> 角色接口</span>
+            <el-tree
+              ref="roleApiTree"
+              v-loading="apiTreeLoading"
+              :props="{children: 'children',label: 'desc'}"
+              :data="apiTree"
+              show-checkbox
+              node-key="ID"
+              :default-checked-keys="defaultCheckedRoleApi"
+            />
+
+          </el-tab-pane>
+        </el-tabs>
+        <div slot="footer">
+          <el-button size="mini" :loading="permissionLoading" @click="cancelPermissionForm()">取 消</el-button>
+          <el-button size="mini" type="primary" @click="submitPermissionForm()">确 定</el-button>
         </div>
       </el-dialog>
 
@@ -95,7 +135,9 @@
 </template>
 
 <script>
-import { getRoles, createRole, updateRoleById, batchDeleteRoleByIds } from '@/api/system/role'
+import { getRoles, createRole, updateRoleById, batchDeleteRoleByIds, getRoleMenusById, getRoleApisById, updateRoleMenusById, updateRoleApisById } from '@/api/system/role'
+import { getMenuTree } from '@/api/system/menu'
+import { getApiTree } from '@/api/system/api'
 
 export default {
   name: 'Role',
@@ -115,6 +157,7 @@ export default {
       loading: false,
 
       // dialog对话框
+      submitLoading: false,
       dialogFormTitle: '',
       dialogType: '',
       dialogFormVisible: false,
@@ -146,11 +189,24 @@ export default {
       // 删除按钮弹出框
       popoverVisible: false,
       // 表格多选
-      multipleSelection: []
+      multipleSelection: [],
+
+      // 修改权限
+      permsDialogVisible: false,
+      permissionLoading: false,
+      menuTree: [],
+      defaultCheckedRoleMenu: [],
+      apiTree: [],
+      defaultCheckedRoleApi: [],
+
+      // 被修改权限的角色ID
+      roleId: 0
     }
   },
   created() {
     this.getTableData()
+    this.getMenuTree()
+    this.getApiTree()
   },
   methods: {
     // 查询
@@ -203,8 +259,7 @@ export default {
     submitForm() {
       this.$refs['dialogForm'].validate(async valid => {
         if (valid) {
-          this.loading = true
-
+          this.submitLoading = true
           this.dialogFormData.status = parseInt(this.dialogFormData.status)
 
           console.log('this.dialogFormData---')
@@ -212,15 +267,14 @@ export default {
 
           if (this.dialogType === 'create') {
             const { code, message } = await createRole(this.dialogFormData)
+            this.submitLoading = false
             if (code !== 200) {
-              this.loading = false
               return this.$message({
                 showClose: true,
                 message: message,
                 type: 'error'
               })
             }
-            this.loading = false
             this.resetForm()
             this.getTableData()
             this.$message({
@@ -230,15 +284,14 @@ export default {
             })
           } else if (this.dialogType === 'update') {
             const { code, message } = await updateRoleById(this.dialogFormData.ID, this.dialogFormData)
+            this.submitLoading = false
             if (code !== 200) {
-              this.loading = false
               return this.$message({
                 showClose: true,
                 message: message,
                 type: 'error'
               })
             }
-            this.loading = false
             this.resetForm()
             this.getTableData()
             this.$message({
@@ -253,6 +306,7 @@ export default {
               type: 'error'
             })
           }
+          this.submitLoading = false
         } else {
           this.$message({
             showClose: true,
@@ -312,9 +366,9 @@ export default {
     },
 
     // 单个删除
-    async singleDelete(Id) {
+    async singleDelete(id) {
       this.loading = true
-      const { code, message } = await batchDeleteRoleByIds({ roleIds: [Id] })
+      const { code, message } = await batchDeleteRoleByIds({ roleIds: [id] })
       if (code !== 200) {
         this.loading = false
         return this.$message({
@@ -332,6 +386,158 @@ export default {
       })
     },
 
+    // 修改权限按钮
+    async updatePermission(roleId) {
+      this.roleId = roleId
+      this.permsDialogVisible = true
+      this.getRoleMenusById(roleId)
+      this.getRoleApisById(roleId)
+    },
+
+    // 获取菜单树
+    async getMenuTree() {
+      this.menuTreeLoading = true
+      const res = await getMenuTree()
+      console.log('getMenuTree---')
+      console.log(res)
+      if (res.code !== 200) {
+        this.menuTreeLoading = false
+        return this.$message({
+          showClose: true,
+          message: res.message,
+          type: 'error'
+        })
+      }
+      this.menuTree = res.data.menuTree
+      this.menuTreeLoading = false
+    },
+
+    // 获取接口树
+    async getApiTree() {
+      this.apiTreeLoading = true
+      const res = await getApiTree()
+      console.log('getApiTree---')
+      console.log(res)
+      if (res.code !== 200) {
+        this.apiTreeLoading = false
+        return this.$message({
+          showClose: true,
+          message: res.message,
+          type: 'error'
+        })
+      }
+      this.apiTree = res.data.apiTree
+      this.apiTreeLoading = false
+    },
+
+    // 获取角色的权限菜单
+    async getRoleMenusById(roleId) {
+      this.permissionLoading = true
+      const res = await getRoleMenusById(roleId)
+      console.log('getRoleMenusById---')
+      console.log(res)
+      if (res.code !== 200) {
+        this.permissionLoading = false
+        return this.$message({
+          showClose: true,
+          message: res.message,
+          type: 'error'
+        })
+      }
+      const menus = res.data.menus
+      const ids = []
+      menus.forEach(x => { ids.push(x.ID) })
+      this.defaultCheckedRoleMenu = ids
+      this.$refs.roleMenuTree.setCheckedKeys(this.defaultCheckedRoleMenu)
+      this.permissionLoading = false
+    },
+
+    // 获取角色的权限接口
+    async getRoleApisById(roleId) {
+      this.permissionLoading = true
+      const res = await getRoleApisById(roleId)
+      console.log('getRoleApisById---')
+      console.log(res)
+      if (res.code !== 200) {
+        this.permissionLoading = false
+        return this.$message({
+          showClose: true,
+          message: res.message,
+          type: 'error'
+        })
+      }
+      const apis = res.data.apis
+      const ids = []
+      apis.forEach(x => { ids.push(x.ID) })
+      this.defaultCheckedRoleApi = ids
+      this.$refs.roleApiTree.setCheckedKeys(this.defaultCheckedRoleApi)
+      this.permissionLoading = false
+    },
+
+    // 修改角色菜单
+    async updateRoleMenusById() {
+      this.permissionLoading = true
+      let ids = this.$refs.roleMenuTree.getCheckedKeys()
+      const idsHalf = this.$refs.roleMenuTree.getHalfCheckedKeys()
+      ids = ids.concat(idsHalf)
+      ids = [...new Set(ids)]
+      console.log('ids---')
+      console.log(ids)
+      const res = await updateRoleMenusById(this.roleId, { menuIds: ids })
+      console.log('updateRoleMenusById---')
+      console.log(res)
+      if (res.code !== 200) {
+        this.permissionLoading = false
+        return this.$message({
+          showClose: true,
+          message: res.message,
+          type: 'error'
+        })
+      }
+      this.permissionLoading = false
+      this.permsDialogVisible = false
+      this.$message({
+        showClose: true,
+        message: '更新角色菜单成功',
+        type: 'success'
+      })
+    },
+
+    // 修改角色接口
+    async updateRoleApisById() {
+      this.permissionLoading = true
+      const ids = this.$refs.roleApiTree.getCheckedKeys(true)
+      const res = await updateRoleApisById(this.roleId, { apiIds: ids })
+      console.log('updateRoleApisById---')
+      console.log(res)
+      if (res.code !== 200) {
+        this.permissionLoading = false
+        return this.$message({
+          showClose: true,
+          message: res.message,
+          type: 'error'
+        })
+      }
+      this.permissionLoading = false
+      this.permsDialogVisible = false
+      this.$message({
+        showClose: true,
+        message: '更新角色接口成功',
+        type: 'success'
+      })
+    },
+
+    // 确定修改角色权限
+    submitPermissionForm() {
+      this.updateRoleMenusById()
+      this.updateRoleApisById()
+    },
+
+    // 取消修改角色权限
+    cancelPermissionForm() {
+      this.permsDialogVisible = false
+    },
+
     // 分页
     handleSizeChange(val) {
       this.params.pageSize = val
@@ -345,12 +551,20 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped >
   .container-card{
     margin: 10px;
   }
 
-  .delete-popover{
-    margin-left: 10px;
+  .role-menu{
+    font-size: 15px;
   }
 </style>
+
+<style lang="scss">
+  .perms-dialog > .el-dialog__body{
+    padding-top: 0;
+    padding-bottom: 15px;
+  }
+</style>
+
