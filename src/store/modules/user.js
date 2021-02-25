@@ -62,8 +62,9 @@ const actions = {
         if (!roles || roles.length <= 0) {
           reject('getInfo: roles must be a non-null array!')
         }
-
-        commit('SET_ROLES', roles)
+        const rolesNames = []
+        roles.forEach(x => { rolesNames.push(x.name) })
+        commit('SET_ROLES', rolesNames)
         commit('SET_NAME', username)
         commit('SET_AVATAR', avatar)
         commit('SET_INTRODUCTION', introduction)

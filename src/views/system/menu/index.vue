@@ -286,9 +286,6 @@ export default {
 
           const dialogFormDataCopy = { ...this.dialogFormData, parentId: this.treeselectValue }
 
-          console.log('this.dialogFormData---')
-          console.log(this.dialogFormData)
-
           if (this.dialogType === 'create') {
             const { code, message } = await createMenu(dialogFormDataCopy)
             this.submitLoading = false

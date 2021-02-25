@@ -69,10 +69,13 @@
       <el-dialog :title="dialogFormTitle" :visible.sync="dialogFormVisible" width="30%">
         <el-form ref="dialogForm" size="small" :model="dialogFormData" :rules="dialogFormRules" label-width="100px">
           <el-form-item label="用户名" prop="username">
-            <el-input v-model.trim="dialogFormData.username" placeholder="用户名" />
+            <el-input ref="password" v-model.trim="dialogFormData.username" placeholder="用户名" />
           </el-form-item>
-          <el-form-item label="密码" prop="password">
-            <el-input v-model.trim="dialogFormData.password" placeholder="密码" />
+          <el-form-item :label="dialogType === 'create' ? '新密码':'重置密码'" prop="password">
+            <el-input v-model.trim="dialogFormData.password" autocomplete="off" :type="passwordType" :placeholder="dialogType === 'create' ? '新密码':'重置密码'" />
+            <span class="show-pwd" @click="showPwd">
+              <svg-icon :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'" />
+            </span>
           </el-form-item>
           <el-form-item label="角色" prop="roleIds">
             <el-select v-model.trim="dialogFormData.roleIds" multiple placeholder="请选择角色" style="width:100%">
@@ -148,6 +151,8 @@ export default {
 
       // 角色
       roles: [],
+
+      passwordType: 'password',
 
       publicKey: `-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDbOYcY8HbDaNM9ooYXoc9s+R5o
@@ -270,6 +275,7 @@ wLXapv+ZfsjG7NgdawIDAQAB
 
       this.dialogFormTitle = '修改用户'
       this.dialogType = 'update'
+      this.passwordType = 'password'
       this.dialogFormVisible = true
     },
 
@@ -429,6 +435,14 @@ wLXapv+ZfsjG7NgdawIDAQAB
       })
     },
 
+    showPwd() {
+      if (this.passwordType === 'password') {
+        this.passwordType = ''
+      } else {
+        this.passwordType = 'password'
+      }
+    },
+
     // 分页
     handleSizeChange(val) {
       this.params.pageSize = val
@@ -449,5 +463,15 @@ wLXapv+ZfsjG7NgdawIDAQAB
 
   .delete-popover{
     margin-left: 10px;
+  }
+
+  .show-pwd {
+    position: absolute;
+    right: 10px;
+    top: 3px;
+    font-size: 16px;
+    color: #889aa4;
+    cursor: pointer;
+    user-select: none;
   }
 </style>

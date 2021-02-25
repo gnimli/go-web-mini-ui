@@ -219,8 +219,7 @@ export default {
     async getTableData() {
       this.loading = true
       const res = await getRoles(this.params)
-      console.log('getRoles---')
-      console.log(res)
+
       if (res.code !== 200) {
         this.loading = false
         return this.$message({
@@ -260,9 +259,6 @@ export default {
       this.$refs['dialogForm'].validate(async valid => {
         if (valid) {
           this.submitLoading = true
-
-          console.log('this.dialogFormData---')
-          console.log(this.dialogFormData)
 
           if (this.dialogType === 'create') {
             const { code, message } = await createRole(this.dialogFormData)
@@ -410,8 +406,7 @@ export default {
     async getMenuTree() {
       this.menuTreeLoading = true
       const res = await getMenuTree()
-      console.log('getMenuTree---')
-      console.log(res)
+
       if (res.code !== 200) {
         this.menuTreeLoading = false
         return this.$message({
@@ -428,8 +423,7 @@ export default {
     async getApiTree() {
       this.apiTreeLoading = true
       const res = await getApiTree()
-      console.log('getApiTree---')
-      console.log(res)
+
       if (res.code !== 200) {
         this.apiTreeLoading = false
         return this.$message({
@@ -446,8 +440,7 @@ export default {
     async getRoleMenusById(roleId) {
       this.permissionLoading = true
       const res = await getRoleMenusById(roleId)
-      console.log('getRoleMenusById---')
-      console.log(res)
+
       if (res.code !== 200) {
         this.permissionLoading = false
         return this.$message({
@@ -468,8 +461,7 @@ export default {
     async getRoleApisById(roleId) {
       this.permissionLoading = true
       const res = await getRoleApisById(roleId)
-      console.log('getRoleApisById---')
-      console.log(res)
+
       if (res.code !== 200) {
         this.permissionLoading = false
         return this.$message({
@@ -493,11 +485,9 @@ export default {
       const idsHalf = this.$refs.roleMenuTree.getHalfCheckedKeys()
       ids = ids.concat(idsHalf)
       ids = [...new Set(ids)]
-      console.log('ids---')
-      console.log(ids)
+
       const res = await updateRoleMenusById(this.roleId, { menuIds: ids })
-      console.log('updateRoleMenusById---')
-      console.log(res)
+
       if (res.code !== 200) {
         this.permissionLoading = false
         return this.$message({
@@ -520,8 +510,7 @@ export default {
       this.permissionLoading = true
       const ids = this.$refs.roleApiTree.getCheckedKeys(true)
       const res = await updateRoleApisById(this.roleId, { apiIds: ids })
-      console.log('updateRoleApisById---')
-      console.log(res)
+
       if (res.code !== 200) {
         this.permissionLoading = false
         return this.$message({

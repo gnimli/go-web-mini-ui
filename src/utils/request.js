@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { MessageBox } from 'element-ui'
+import { MessageBox, Message } from 'element-ui'
 import store from '@/store'
 import { getToken } from '@/utils/auth'
 
@@ -110,6 +110,14 @@ service.interceptors.response.use(
     //   showClose: true
     // })
     // return Promise.reject(errorMsg)
+    if (error.response.status === 500) {
+      Message({
+        message: '服务器异常，请稍后重试',
+        type: 'error',
+        duration: 5 * 1000,
+        showClose: true
+      })
+    }
     return new Promise(reject => {
       reject({ code: error.response.status, message: error.response.data.message })
     })
