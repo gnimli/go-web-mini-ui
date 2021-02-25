@@ -1,16 +1,453 @@
 <template>
   <div>
-    user
+    <el-card class="container-card" shadow="always">
+      <el-form size="mini" :inline="true" :model="params" class="demo-form-inline">
+        <el-form-item label="用户名">
+          <el-input v-model.trim="params.username" clearable placeholder="用户名" @clear="search" />
+        </el-form-item>
+        <el-form-item label="昵称">
+          <el-input v-model.trim="params.nickname" clearable placeholder="昵称" @clear="search" />
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model.trim="params.status" clearable placeholder="状态" @change="search" @clear="search">
+            <el-option label="正常" value="1" />
+            <el-option label="禁用" value="2" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="手机号">
+          <el-input v-model.trim="params.mobile" clearable placeholder="手机号" @clear="search" />
+        </el-form-item>
+        <el-form-item>
+          <el-button :loading="loading" icon="el-icon-search" type="primary" @click="search">查询</el-button>
+        </el-form-item>
+        <el-form-item>
+          <el-button :loading="loading" icon="el-icon-plus" type="warning" @click="create">新增</el-button>
+        </el-form-item>
+        <el-form-item>
+          <el-button :disabled="multipleSelection.length === 0" :loading="loading" icon="el-icon-delete" type="danger" @click="batchDelete">批量删除</el-button>
+        </el-form-item>
+      </el-form>
+
+      <el-table v-loading="loading" :data="tableData" border stripe style="width: 100%" @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" align="center" />
+        <el-table-column show-overflow-tooltip sortable prop="username" label="用户名" />
+        <el-table-column show-overflow-tooltip sortable prop="nickname" label="昵称" />
+        <el-table-column show-overflow-tooltip sortable prop="status" label="状态" align="center">
+          <template slot-scope="scope">
+            <el-tag size="small" :type="scope.row.status === 1 ? 'success':'danger'" disable-transitions>{{ scope.row.status === 1 ? '正常':'禁用' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column show-overflow-tooltip sortable prop="mobile" label="手机号" />
+        <el-table-column show-overflow-tooltip sortable prop="creator" label="创建人" />
+        <el-table-column show-overflow-tooltip sortable prop="introduction" label="说明" />
+        <el-table-column fixed="right" label="操作" align="center" width="120">
+          <template slot-scope="scope">
+            <el-tooltip content="编辑" effect="dark" placement="top">
+              <el-button size="mini" icon="el-icon-edit" circle type="primary" @click="update(scope.row)" />
+            </el-tooltip>
+            <el-tooltip class="delete-popover" content="删除" effect="dark" placement="top">
+              <el-popconfirm title="确定删除吗？" @onConfirm="singleDelete(scope.row.ID)">
+                <el-button slot="reference" size="mini" icon="el-icon-delete" circle type="danger" />
+              </el-popconfirm>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <el-pagination
+        :current-page="params.pageNum"
+        :page-size="params.pageSize"
+        :total="total"
+        :page-sizes="[1, 5, 10, 30]"
+        layout="total, prev, pager, next, sizes"
+        background
+        style="margin-top: 10px;float:right;margin-bottom: 10px;"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+
+      <el-dialog :title="dialogFormTitle" :visible.sync="dialogFormVisible" width="30%">
+        <el-form ref="dialogForm" size="small" :model="dialogFormData" :rules="dialogFormRules" label-width="100px">
+          <el-form-item label="用户名" prop="username">
+            <el-input v-model.trim="dialogFormData.username" placeholder="用户名" />
+          </el-form-item>
+          <el-form-item label="密码" prop="password">
+            <el-input v-model.trim="dialogFormData.password" placeholder="密码" />
+          </el-form-item>
+          <el-form-item label="角色" prop="roleIds">
+            <el-select v-model.trim="dialogFormData.roleIds" multiple placeholder="请选择角色" style="width:100%">
+              <el-option
+                v-for="item in roles"
+                :key="item.ID"
+                :label="item.name"
+                :value="item.ID"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="状态" prop="status">
+            <el-select v-model.trim="dialogFormData.status" placeholder="请选择状态" style="width:100%">
+              <el-option label="正常" :value="1" />
+              <el-option label="禁用" :value="2" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="昵称" prop="nickname">
+            <el-input v-model.trim="dialogFormData.nickname" placeholder="昵称" />
+          </el-form-item>
+          <el-form-item label="手机号" prop="mobile">
+            <el-input v-model.trim="dialogFormData.mobile" placeholder="手机号" />
+          </el-form-item>
+          <el-form-item label="说明" prop="introduction">
+            <el-input v-model.trim="dialogFormData.introduction" type="textarea" placeholder="说明" show-word-limit maxlength="100" />
+          </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+          <el-button size="mini" @click="cancelForm()">取 消</el-button>
+          <el-button size="mini" :loading="submitLoading" type="primary" @click="submitForm()">确 定</el-button>
+        </div>
+      </el-dialog>
+
+    </el-card>
   </div>
 </template>
 
 <script>
+import JSEncrypt from 'jsencrypt'
+import { getUsers, createUser, updateUserById, batchDeleteUserByIds } from '@/api/system/user'
+import { getRoles } from '@/api/system/role'
+
 export default {
   name: 'User',
   data() {
+    var checkPhone = (rule, value, callback) => {
+      if (!value) {
+        return callback(new Error('手机号不能为空'))
+      } else {
+        const reg = /^1[3|4|5|7|8][0-9]\d{8}$/
+        console.log(reg.test(value))
+        if (reg.test(value)) {
+          callback()
+        } else {
+          return callback(new Error('请输入正确的手机号'))
+        }
+      }
+    }
     return {
+      // 查询参数
+      params: {
+        username: '',
+        nickname: '',
+        status: '',
+        mobile: '',
+        pageNum: 1,
+        pageSize: 10
+      },
+      // 表格数据
+      tableData: [],
+      total: 0,
+      loading: false,
 
+      // 角色
+      roles: [],
+
+      publicKey: `-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDbOYcY8HbDaNM9ooYXoc9s+R5o
+R05ZL1BsVKadQBgOVH/kj7PQuD+ABEFVgB6rJNi287fRuZeZR+MCoG72H+AYsAhR
+sEaB5SuI7gDEstXuTyjhx5bz0wUujbDK4VMgRfPO6MQo+A0c95OadDEvEQDG3KBQ
+wLXapv+ZfsjG7NgdawIDAQAB
+-----END PUBLIC KEY-----`,
+
+      // dialog对话框
+      submitLoading: false,
+      dialogFormTitle: '',
+      dialogType: '',
+      dialogFormVisible: false,
+      dialogFormData: {
+        username: '',
+        password: '',
+        nickname: '',
+        status: 1,
+        mobile: '',
+        avatar: '',
+        introduction: '',
+        roleIds: ''
+      },
+      dialogFormRules: {
+        username: [
+          { required: true, message: '请输入用户名', trigger: 'blur' },
+          { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' }
+        ],
+        password: [
+          { required: false, message: '请输入密码', trigger: 'blur' },
+          { min: 6, max: 30, message: '长度在 6 到 30 个字符', trigger: 'blur' }
+        ],
+        nickname: [
+          { required: false, message: '请输入昵称', trigger: 'blur' },
+          { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' }
+        ],
+        mobile: [
+          { required: true, validator: checkPhone, trigger: 'blur' }
+        ],
+        status: [
+          { required: true, message: '请选择状态', trigger: 'change' }
+        ],
+        introduction: [
+          { required: false, message: '说明', trigger: 'blur' },
+          { min: 0, max: 100, message: '长度在 0 到 100 个字符', trigger: 'blur' }
+        ]
+      },
+
+      // 删除按钮弹出框
+      popoverVisible: false,
+      // 表格多选
+      multipleSelection: []
+    }
+  },
+  created() {
+    this.getTableData()
+    this.getRoles()
+  },
+  methods: {
+    // 查询
+    search() {
+      this.params.pageNum = 1
+      this.getTableData()
+    },
+
+    // 获取表格数据
+    async getTableData() {
+      this.loading = true
+      const res = await getUsers(this.params)
+      console.log('getUsers---')
+      console.log(res)
+
+      if (res.code !== 200) {
+        this.loading = false
+        return this.$message({
+          showClose: true,
+          message: res.message,
+          type: 'error'
+        })
+      }
+      this.tableData = res.data.users
+      this.total = res.data.total
+      this.loading = false
+    },
+
+    // 获取角色数据
+    async getRoles() {
+      const res = await getRoles(null)
+      console.log('getRoles---')
+      console.log(res)
+      if (res.code !== 200) {
+        return this.$message({
+          showClose: true,
+          message: res.message,
+          type: 'error'
+        })
+      }
+      this.roles = res.data.roles
+    },
+
+    // 新增
+    create() {
+      this.dialogFormTitle = '新增用户'
+      this.dialogType = 'create'
+      this.dialogFormVisible = true
+    },
+
+    // 修改
+    update(row) {
+      console.log('update---')
+      console.log(row)
+      this.dialogFormData.ID = row.ID
+      this.dialogFormData.username = row.username
+      this.dialogFormData.password = ''
+      this.dialogFormData.nickname = row.nickname
+      this.dialogFormData.status = row.status
+      this.dialogFormData.mobile = row.mobile
+      this.dialogFormData.introduction = row.introduction
+      this.dialogFormData.roleIds = row.roleIds
+
+      this.dialogFormTitle = '修改用户'
+      this.dialogType = 'update'
+      this.dialogFormVisible = true
+    },
+
+    // 提交表单
+    submitForm() {
+      this.$refs['dialogForm'].validate(async valid => {
+        if (valid) {
+          this.dialogFormDataCopy = { ...this.dialogFormData }
+          if (this.dialogFormData.password !== '') {
+          // 密码RSA加密处理
+            const encryptor = new JSEncrypt()
+            // 设置公钥
+            encryptor.setPublicKey(this.publicKey)
+            // 加密密码
+            const encPassword = encryptor.encrypt(this.dialogFormData.password)
+            this.dialogFormDataCopy.password = encPassword
+          }
+
+          this.submitLoading = true
+          if (this.dialogType === 'create') {
+            const { code, message } = await createUser(this.dialogFormDataCopy)
+            this.submitLoading = false
+            if (code !== 200) {
+              return this.$message({
+                showClose: true,
+                message: message,
+                type: 'error'
+              })
+            }
+
+            this.resetForm()
+            this.getTableData()
+            this.$message({
+              showClose: true,
+              message: message,
+              type: 'success'
+            })
+          } else if (this.dialogType === 'update') {
+            const { code, message } = await updateUserById(this.dialogFormDataCopy.ID, this.dialogFormDataCopy)
+            this.submitLoading = false
+            if (code !== 200) {
+              return this.$message({
+                showClose: true,
+                message: message,
+                type: 'error'
+              })
+            }
+
+            this.resetForm()
+            this.getTableData()
+            this.$message({
+              showClose: true,
+              message: message,
+              type: 'success'
+            })
+          } else {
+            this.$message({
+              showClose: true,
+              message: '未知类型',
+              type: 'error'
+            })
+          }
+          this.submitLoading = false
+        } else {
+          this.$message({
+            showClose: true,
+            message: '表单校验失败',
+            type: 'error'
+          })
+          return false
+        }
+      })
+    },
+
+    // 提交表单
+    cancelForm() {
+      this.resetForm()
+    },
+
+    resetForm() {
+      this.dialogFormVisible = false
+      this.$refs['dialogForm'].resetFields()
+      this.dialogFormData = {
+        username: '',
+        password: '',
+        nickname: '',
+        status: 1,
+        mobile: '',
+        avatar: '',
+        introduction: '',
+        roleIds: ''
+      }
+    },
+
+    // 批量删除
+    batchDelete() {
+      this.$confirm('此操作将永久删除, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(async res => {
+        this.loading = true
+        const userIds = []
+        this.multipleSelection.forEach(x => {
+          userIds.push(x.ID)
+        })
+        const { code, message } = await batchDeleteUserByIds({ userIds: userIds })
+        if (code !== 200) {
+          this.loading = false
+          return this.$message({
+            showClose: true,
+            message: message,
+            type: 'error'
+          })
+        }
+        this.loading = false
+        this.getTableData()
+        this.$message({
+          showClose: true,
+          message: message,
+          type: 'success'
+        })
+      }).catch(() => {
+        this.$message({
+          showClose: true,
+          type: 'info',
+          message: '已取消删除'
+        })
+      })
+    },
+
+    // 表格多选
+    handleSelectionChange(val) {
+      this.multipleSelection = val
+    },
+
+    // 单个删除
+    async singleDelete(Id) {
+      console.log('Id---')
+      console.log(Id)
+      this.loading = true
+      const { code, message } = await batchDeleteUserByIds({ userIds: [Id] })
+      if (code !== 200) {
+        this.loading = false
+        return this.$message({
+          showClose: true,
+          message: message,
+          type: 'error'
+        })
+      }
+      this.loading = false
+      this.getTableData()
+      this.$message({
+        showClose: true,
+        message: message,
+        type: 'success'
+      })
+    },
+
+    // 分页
+    handleSizeChange(val) {
+      this.params.pageSize = val
+      this.getTableData()
+    },
+    handleCurrentChange(val) {
+      this.params.pageNum = val
+      this.getTableData()
     }
   }
 }
 </script>
+
+<style scoped>
+  .container-card{
+    margin: 10px;
+  }
+
+  .delete-popover{
+    margin-left: 10px;
+  }
+</style>

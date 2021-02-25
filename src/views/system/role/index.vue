@@ -10,8 +10,8 @@
         </el-form-item>
         <el-form-item label="角色状态">
           <el-select v-model.trim="params.status" clearable placeholder="角色状态" @change="search" @clear="search">
-            <el-option label="正常" value="1" />
-            <el-option label="禁用" value="2" />
+            <el-option label="正常" :value="1" />
+            <el-option label="禁用" :value="2" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -76,8 +76,8 @@
           </el-form-item>
           <el-form-item label="角色状态" prop="status">
             <el-select v-model.trim="dialogFormData.status" placeholder="请选择角色状态" style="width: 180px">
-              <el-option label="正常" value="1" />
-              <el-option label="禁用" value="2" />
+              <el-option label="正常" :value="1" />
+              <el-option label="禁用" :value="2" />
             </el-select>
           </el-form-item>
           <el-form-item label="等级(1最高)" prop="sort">
@@ -164,7 +164,7 @@ export default {
       dialogFormData: {
         name: '',
         keyword: '',
-        status: '1',
+        status: 1,
         sort: 999,
         desc: ''
       },
@@ -247,7 +247,7 @@ export default {
       this.dialogFormData.name = row.name
       this.dialogFormData.keyword = row.keyword
       this.dialogFormData.sort = row.sort
-      this.dialogFormData.status = row.status + ''
+      this.dialogFormData.status = row.status
       this.dialogFormData.desc = row.desc
 
       this.dialogFormTitle = '修改角色'
@@ -260,7 +260,6 @@ export default {
       this.$refs['dialogForm'].validate(async valid => {
         if (valid) {
           this.submitLoading = true
-          this.dialogFormData.status = parseInt(this.dialogFormData.status)
 
           console.log('this.dialogFormData---')
           console.log(this.dialogFormData)
@@ -329,34 +328,45 @@ export default {
       this.dialogFormData = {
         name: '',
         keyword: '',
-        status: '1',
+        status: 1,
         sort: 999,
         desc: ''
       }
     },
 
     // 批量删除
-    async batchDelete() {
-      this.loading = true
-      const roleIds = []
-      this.multipleSelection.forEach(x => {
-        roleIds.push(x.ID)
-      })
-      const { code, message } = await batchDeleteRoleByIds({ roleIds: roleIds })
-      if (code !== 200) {
+    batchDelete() {
+      this.$confirm('此操作将永久删除, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(async res => {
+        this.loading = true
+        const roleIds = []
+        this.multipleSelection.forEach(x => {
+          roleIds.push(x.ID)
+        })
+        const { code, message } = await batchDeleteRoleByIds({ roleIds: roleIds })
+        if (code !== 200) {
+          this.loading = false
+          return this.$message({
+            showClose: true,
+            message: message,
+            type: 'error'
+          })
+        }
         this.loading = false
-        return this.$message({
+        this.getTableData()
+        this.$message({
           showClose: true,
           message: message,
-          type: 'error'
+          type: 'success'
         })
-      }
-      this.loading = false
-      this.getTableData()
-      this.$message({
-        showClose: true,
-        message: message,
-        type: 'success'
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消删除'
+        })
       })
     },
 
@@ -390,6 +400,8 @@ export default {
     async updatePermission(roleId) {
       this.roleId = roleId
       this.permsDialogVisible = true
+      this.getMenuTree()
+      this.getApiTree()
       this.getRoleMenusById(roleId)
       this.getRoleApisById(roleId)
     },

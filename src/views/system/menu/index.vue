@@ -199,6 +199,9 @@ export default {
         activeMenu: [
           { required: false, message: '请输入高亮菜单', trigger: 'blur' },
           { min: 0, max: 100, message: '长度在 0 到 100 个字符', trigger: 'blur' }
+        ],
+        parentId: [
+          { required: true, message: '请选择上级目录', trigger: 'change' }
         ]
 
       },
@@ -265,10 +268,6 @@ export default {
         if (valid) {
           this.submitLoading = true
 
-          this.dialogFormData.status = this.dialogFormData.status === '是' ? 2 : 1
-          this.dialogFormData.hidden = this.dialogFormData.hidden === '是' ? 1 : 2
-          this.dialogFormData.noCache = this.dialogFormData.noCache === '是' ? 2 : 1
-
           if (this.dialogFormData.ID === this.dialogFormData.parentId) {
             return this.$message({
               showClose: true,
@@ -277,7 +276,18 @@ export default {
             })
           }
 
+          if (this.dialogFormData.component === '') {
+            this.dialogFormData.component = 'Layout'
+          }
+
+          this.dialogFormData.status = this.dialogFormData.status === '是' ? 2 : 1
+          this.dialogFormData.hidden = this.dialogFormData.hidden === '是' ? 1 : 2
+          this.dialogFormData.noCache = this.dialogFormData.noCache === '是' ? 2 : 1
+
           const dialogFormDataCopy = { ...this.dialogFormData, parentId: this.treeselectValue }
+
+          console.log('this.dialogFormData---')
+          console.log(this.dialogFormData)
 
           if (this.dialogType === 'create') {
             const { code, message } = await createMenu(dialogFormDataCopy)
@@ -361,27 +371,38 @@ export default {
     },
 
     // 批量删除
-    async batchDelete() {
-      this.loading = true
-      const menuIds = []
-      this.multipleSelection.forEach(x => {
-        menuIds.push(x.ID)
-      })
-      const { code, message } = await batchDeleteMenuByIds({ menuIds: menuIds })
-      if (code !== 200) {
+    batchDelete() {
+      this.$confirm('此操作将永久删除, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(async res => {
+        this.loading = true
+        const menuIds = []
+        this.multipleSelection.forEach(x => {
+          menuIds.push(x.ID)
+        })
+        const { code, message } = await batchDeleteMenuByIds({ menuIds: menuIds })
+        if (code !== 200) {
+          this.loading = false
+          return this.$message({
+            showClose: true,
+            message: message,
+            type: 'error'
+          })
+        }
         this.loading = false
-        return this.$message({
+        this.getTableData()
+        this.$message({
           showClose: true,
           message: message,
-          type: 'error'
+          type: 'success'
         })
-      }
-      this.loading = false
-      this.getTableData()
-      this.$message({
-        showClose: true,
-        message: message,
-        type: 'success'
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消删除'
+        })
       })
     },
 

@@ -158,7 +158,7 @@ export default {
           { min: 1, max: 50, message: '长度在 1 到 50 个字符', trigger: 'blur' }
         ],
         method: [
-          { required: true, message: '请输入请求方式', trigger: 'change' }
+          { required: true, message: '请选择请求方式', trigger: 'change' }
         ],
         desc: [
           { required: false, message: '说明', trigger: 'blur' },
@@ -297,27 +297,39 @@ export default {
     },
 
     // 批量删除
-    async batchDelete() {
-      this.loading = true
-      const apiIds = []
-      this.multipleSelection.forEach(x => {
-        apiIds.push(x.ID)
-      })
-      const { code, message } = await batchDeleteApiByIds({ apiIds: apiIds })
-      if (code !== 200) {
+    batchDelete() {
+      this.$confirm('此操作将永久删除, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(async res => {
+        this.loading = true
+        const apiIds = []
+        this.multipleSelection.forEach(x => {
+          apiIds.push(x.ID)
+        })
+        const { code, message } = await batchDeleteApiByIds({ apiIds: apiIds })
+        if (code !== 200) {
+          this.loading = false
+          return this.$message({
+            showClose: true,
+            message: message,
+            type: 'error'
+          })
+        }
         this.loading = false
-        return this.$message({
+        this.getTableData()
+        this.$message({
           showClose: true,
           message: message,
-          type: 'error'
+          type: 'success'
         })
-      }
-      this.loading = false
-      this.getTableData()
-      this.$message({
-        showClose: true,
-        message: message,
-        type: 'success'
+      }).catch(() => {
+        this.$message({
+          showClose: true,
+          type: 'info',
+          message: '已取消删除'
+        })
       })
     },
 
