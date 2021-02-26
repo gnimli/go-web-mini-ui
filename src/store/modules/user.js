@@ -96,11 +96,11 @@ const actions = {
   },
 
   // refresh token
-  async refreshToken() {
+  async refreshToken({ commit }) {
     // 刷新token
     const { data } = await refreshToken()
+    commit('SET_TOKEN', data.token)
     setToken(data.token)
-    this.SET_TOKEN(data.token)
   },
 
   // remove token

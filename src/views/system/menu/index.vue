@@ -219,19 +219,13 @@ export default {
     // 获取表格数据
     async getTableData() {
       this.loading = true
-      const res = await getMenuTree()
-
-      if (res.code !== 200) {
+      try {
+        const { data } = await getMenuTree()
+        this.tableData = data.menuTree
+        this.treeselectData = [{ ID: 0, title: '顶级类目', children: data.menuTree }]
+      } finally {
         this.loading = false
-        return this.$message({
-          showClose: true,
-          message: res.message,
-          type: 'error'
-        })
       }
-      this.tableData = res.data.menuTree
-      this.treeselectData = [{ ID: 0, title: '顶级类目', children: res.data.menuTree }]
-      this.loading = false
     },
 
     // 新增
@@ -285,51 +279,26 @@ export default {
           this.dialogFormData.noCache = this.dialogFormData.noCache === '是' ? 2 : 1
 
           const dialogFormDataCopy = { ...this.dialogFormData, parentId: this.treeselectValue }
-
-          if (this.dialogType === 'create') {
-            const { code, message } = await createMenu(dialogFormDataCopy)
-            this.submitLoading = false
-            if (code !== 200) {
-              return this.$message({
-                showClose: true,
-                message: message,
-                type: 'error'
-              })
+          let msg = ''
+          try {
+            if (this.dialogType === 'create') {
+              const { message } = await createMenu(dialogFormDataCopy)
+              msg = message
+            } else {
+              const { message } = await updateMenuById(dialogFormDataCopy.ID, dialogFormDataCopy)
+              msg = message
             }
-
-            this.resetForm()
-            this.getTableData()
-            this.$message({
-              showClose: true,
-              message: message,
-              type: 'success'
-            })
-          } else if (this.dialogType === 'update') {
-            const { code, message } = await updateMenuById(dialogFormDataCopy.ID, dialogFormDataCopy)
+          } finally {
             this.submitLoading = false
-            if (code !== 200) {
-              return this.$message({
-                showClose: true,
-                message: message,
-                type: 'error'
-              })
-            }
-
-            this.resetForm()
-            this.getTableData()
-            this.$message({
-              showClose: true,
-              message: message,
-              type: 'success'
-            })
-          } else {
-            this.$message({
-              showClose: true,
-              message: '未知类型',
-              type: 'error'
-            })
           }
-          this.submitLoading = false
+
+          this.resetForm()
+          this.getTableData()
+          this.$message({
+            showClose: true,
+            message: msg,
+            type: 'success'
+          })
         } else {
           this.$message({
             showClose: true,
@@ -379,20 +348,18 @@ export default {
         this.multipleSelection.forEach(x => {
           menuIds.push(x.ID)
         })
-        const { code, message } = await batchDeleteMenuByIds({ menuIds: menuIds })
-        if (code !== 200) {
+        let msg = ''
+        try {
+          const { message } = await batchDeleteMenuByIds({ menuIds: menuIds })
+          msg = message
+        } finally {
           this.loading = false
-          return this.$message({
-            showClose: true,
-            message: message,
-            type: 'error'
-          })
         }
-        this.loading = false
+
         this.getTableData()
         this.$message({
           showClose: true,
-          message: message,
+          message: msg,
           type: 'success'
         })
       }).catch(() => {
@@ -411,20 +378,18 @@ export default {
     // 单个删除
     async singleDelete(Id) {
       this.loading = true
-      const { code, message } = await batchDeleteMenuByIds({ menuIds: [Id] })
-      if (code !== 200) {
+      let msg = ''
+      try {
+        const { message } = await batchDeleteMenuByIds({ menuIds: [Id] })
+        msg = message
+      } finally {
         this.loading = false
-        return this.$message({
-          showClose: true,
-          message: message,
-          type: 'error'
-        })
       }
-      this.loading = false
+
       this.getTableData()
       this.$message({
         showClose: true,
-        message: message,
+        message: msg,
         type: 'success'
       })
     },

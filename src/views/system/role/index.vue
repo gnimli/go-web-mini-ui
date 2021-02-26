@@ -218,19 +218,13 @@ export default {
     // 获取表格数据
     async getTableData() {
       this.loading = true
-      const res = await getRoles(this.params)
-
-      if (res.code !== 200) {
+      try {
+        const { data } = await getRoles(this.params)
+        this.tableData = data.roles
+        this.total = data.total
+      } finally {
         this.loading = false
-        return this.$message({
-          showClose: true,
-          message: res.message,
-          type: 'error'
-        })
       }
-      this.tableData = res.data.roles
-      this.total = res.data.total
-      this.loading = false
     },
 
     // 新增
@@ -259,49 +253,26 @@ export default {
       this.$refs['dialogForm'].validate(async valid => {
         if (valid) {
           this.submitLoading = true
-
-          if (this.dialogType === 'create') {
-            const { code, message } = await createRole(this.dialogFormData)
-            this.submitLoading = false
-            if (code !== 200) {
-              return this.$message({
-                showClose: true,
-                message: message,
-                type: 'error'
-              })
+          let msg = ''
+          try {
+            if (this.dialogType === 'create') {
+              const { message } = await createRole(this.dialogFormData)
+              msg = message
+            } else {
+              const { message } = await updateRoleById(this.dialogFormData.ID, this.dialogFormData)
+              msg = message
             }
-            this.resetForm()
-            this.getTableData()
-            this.$message({
-              showClose: true,
-              message: message,
-              type: 'success'
-            })
-          } else if (this.dialogType === 'update') {
-            const { code, message } = await updateRoleById(this.dialogFormData.ID, this.dialogFormData)
+          } finally {
             this.submitLoading = false
-            if (code !== 200) {
-              return this.$message({
-                showClose: true,
-                message: message,
-                type: 'error'
-              })
-            }
-            this.resetForm()
-            this.getTableData()
-            this.$message({
-              showClose: true,
-              message: message,
-              type: 'success'
-            })
-          } else {
-            this.$message({
-              showClose: true,
-              message: '未知类型',
-              type: 'error'
-            })
           }
-          this.submitLoading = false
+
+          this.resetForm()
+          this.getTableData()
+          this.$message({
+            showClose: true,
+            message: msg,
+            type: 'success'
+          })
         } else {
           this.$message({
             showClose: true,
@@ -342,20 +313,18 @@ export default {
         this.multipleSelection.forEach(x => {
           roleIds.push(x.ID)
         })
-        const { code, message } = await batchDeleteRoleByIds({ roleIds: roleIds })
-        if (code !== 200) {
+        let msg = ''
+        try {
+          const { message } = await batchDeleteRoleByIds({ roleIds: roleIds })
+          msg = message
+        } finally {
           this.loading = false
-          return this.$message({
-            showClose: true,
-            message: message,
-            type: 'error'
-          })
         }
-        this.loading = false
+
         this.getTableData()
         this.$message({
           showClose: true,
-          message: message,
+          message: msg,
           type: 'success'
         })
       }).catch(() => {
@@ -374,20 +343,18 @@ export default {
     // 单个删除
     async singleDelete(id) {
       this.loading = true
-      const { code, message } = await batchDeleteRoleByIds({ roleIds: [id] })
-      if (code !== 200) {
+      let msg = ''
+      try {
+        const { message } = await batchDeleteRoleByIds({ roleIds: [id] })
+        msg = message
+      } finally {
         this.loading = false
-        return this.$message({
-          showClose: true,
-          message: message,
-          type: 'error'
-        })
       }
-      this.loading = false
+
       this.getTableData()
       this.$message({
         showClose: true,
-        message: message,
+        message: msg,
         type: 'success'
       })
     },
@@ -405,77 +372,59 @@ export default {
     // 获取菜单树
     async getMenuTree() {
       this.menuTreeLoading = true
-      const res = await getMenuTree()
-
-      if (res.code !== 200) {
+      try {
+        const { data } = await getMenuTree()
+        this.menuTree = data.menuTree
+      } finally {
         this.menuTreeLoading = false
-        return this.$message({
-          showClose: true,
-          message: res.message,
-          type: 'error'
-        })
       }
-      this.menuTree = res.data.menuTree
-      this.menuTreeLoading = false
     },
 
     // 获取接口树
     async getApiTree() {
       this.apiTreeLoading = true
-      const res = await getApiTree()
-
-      if (res.code !== 200) {
+      try {
+        const { data } = await getApiTree()
+        this.apiTree = data.apiTree
+      } finally {
         this.apiTreeLoading = false
-        return this.$message({
-          showClose: true,
-          message: res.message,
-          type: 'error'
-        })
       }
-      this.apiTree = res.data.apiTree
-      this.apiTreeLoading = false
     },
 
     // 获取角色的权限菜单
     async getRoleMenusById(roleId) {
       this.permissionLoading = true
-      const res = await getRoleMenusById(roleId)
-
-      if (res.code !== 200) {
+      let rseData = []
+      try {
+        const { data } = await getRoleMenusById(roleId)
+        rseData = data
+      } finally {
         this.permissionLoading = false
-        return this.$message({
-          showClose: true,
-          message: res.message,
-          type: 'error'
-        })
       }
-      const menus = res.data.menus
+
+      const menus = rseData.menus
       const ids = []
       menus.forEach(x => { ids.push(x.ID) })
       this.defaultCheckedRoleMenu = ids
       this.$refs.roleMenuTree.setCheckedKeys(this.defaultCheckedRoleMenu)
-      this.permissionLoading = false
     },
 
     // 获取角色的权限接口
     async getRoleApisById(roleId) {
       this.permissionLoading = true
-      const res = await getRoleApisById(roleId)
-
-      if (res.code !== 200) {
+      let resData = []
+      try {
+        const { data } = await getRoleApisById(roleId)
+        resData = data
+      } finally {
         this.permissionLoading = false
-        return this.$message({
-          showClose: true,
-          message: res.message,
-          type: 'error'
-        })
       }
-      const apis = res.data.apis
+
+      const apis = resData.apis
       const ids = []
       apis.forEach(x => { ids.push(x.ID) })
       this.defaultCheckedRoleApi = ids
       this.$refs.roleApiTree.setCheckedKeys(this.defaultCheckedRoleApi)
-      this.permissionLoading = false
     },
 
     // 修改角色菜单
@@ -486,17 +435,12 @@ export default {
       ids = ids.concat(idsHalf)
       ids = [...new Set(ids)]
 
-      const res = await updateRoleMenusById(this.roleId, { menuIds: ids })
-
-      if (res.code !== 200) {
+      try {
+        await updateRoleMenusById(this.roleId, { menuIds: ids })
+      } finally {
         this.permissionLoading = false
-        return this.$message({
-          showClose: true,
-          message: res.message,
-          type: 'error'
-        })
       }
-      this.permissionLoading = false
+
       this.permsDialogVisible = false
       this.$message({
         showClose: true,
@@ -509,17 +453,12 @@ export default {
     async updateRoleApisById() {
       this.permissionLoading = true
       const ids = this.$refs.roleApiTree.getCheckedKeys(true)
-      const res = await updateRoleApisById(this.roleId, { apiIds: ids })
-
-      if (res.code !== 200) {
+      try {
+        await updateRoleApisById(this.roleId, { apiIds: ids })
+      } finally {
         this.permissionLoading = false
-        return this.$message({
-          showClose: true,
-          message: res.message,
-          type: 'error'
-        })
       }
-      this.permissionLoading = false
+
       this.permsDialogVisible = false
       this.$message({
         showClose: true,

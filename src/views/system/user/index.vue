@@ -126,7 +126,6 @@ export default {
         return callback(new Error('手机号不能为空'))
       } else {
         const reg = /^1[3|4|5|7|8][0-9]\d{8}$/
-        console.log(reg.test(value))
         if (reg.test(value)) {
           callback()
         } else {
@@ -221,35 +220,20 @@ wLXapv+ZfsjG7NgdawIDAQAB
     // 获取表格数据
     async getTableData() {
       this.loading = true
-      const res = await getUsers(this.params)
-      console.log('getUsers---')
-      console.log(res)
-
-      if (res.code !== 200) {
+      try {
+        const { data } = await getUsers(this.params)
+        console.log('获取用户信息---')
+        this.tableData = data.users
+        this.total = data.total
+      } finally {
         this.loading = false
-        return this.$message({
-          showClose: true,
-          message: res.message,
-          type: 'error'
-        })
       }
-      this.tableData = res.data.users
-      this.total = res.data.total
-      this.loading = false
     },
 
     // 获取角色数据
     async getRoles() {
       const res = await getRoles(null)
-      console.log('getRoles---')
-      console.log(res)
-      if (res.code !== 200) {
-        return this.$message({
-          showClose: true,
-          message: res.message,
-          type: 'error'
-        })
-      }
+
       this.roles = res.data.roles
     },
 
@@ -262,8 +246,6 @@ wLXapv+ZfsjG7NgdawIDAQAB
 
     // 修改
     update(row) {
-      console.log('update---')
-      console.log(row)
       this.dialogFormData.ID = row.ID
       this.dialogFormData.username = row.username
       this.dialogFormData.password = ''
@@ -283,6 +265,8 @@ wLXapv+ZfsjG7NgdawIDAQAB
     submitForm() {
       this.$refs['dialogForm'].validate(async valid => {
         if (valid) {
+          this.submitLoading = true
+
           this.dialogFormDataCopy = { ...this.dialogFormData }
           if (this.dialogFormData.password !== '') {
           // 密码RSA加密处理
@@ -293,52 +277,26 @@ wLXapv+ZfsjG7NgdawIDAQAB
             const encPassword = encryptor.encrypt(this.dialogFormData.password)
             this.dialogFormDataCopy.password = encPassword
           }
-
-          this.submitLoading = true
-          if (this.dialogType === 'create') {
-            const { code, message } = await createUser(this.dialogFormDataCopy)
-            this.submitLoading = false
-            if (code !== 200) {
-              return this.$message({
-                showClose: true,
-                message: message,
-                type: 'error'
-              })
+          let msg = ''
+          try {
+            if (this.dialogType === 'create') {
+              const { message } = await createUser(this.dialogFormDataCopy)
+              msg = message
+            } else {
+              const { message } = await updateUserById(this.dialogFormDataCopy.ID, this.dialogFormDataCopy)
+              msg = message
             }
-
-            this.resetForm()
-            this.getTableData()
-            this.$message({
-              showClose: true,
-              message: message,
-              type: 'success'
-            })
-          } else if (this.dialogType === 'update') {
-            const { code, message } = await updateUserById(this.dialogFormDataCopy.ID, this.dialogFormDataCopy)
+          } finally {
             this.submitLoading = false
-            if (code !== 200) {
-              return this.$message({
-                showClose: true,
-                message: message,
-                type: 'error'
-              })
-            }
-
-            this.resetForm()
-            this.getTableData()
-            this.$message({
-              showClose: true,
-              message: message,
-              type: 'success'
-            })
-          } else {
-            this.$message({
-              showClose: true,
-              message: '未知类型',
-              type: 'error'
-            })
           }
-          this.submitLoading = false
+
+          this.resetForm()
+          this.getTableData()
+          this.$message({
+            showClose: true,
+            message: msg,
+            type: 'success'
+          })
         } else {
           this.$message({
             showClose: true,
@@ -382,20 +340,18 @@ wLXapv+ZfsjG7NgdawIDAQAB
         this.multipleSelection.forEach(x => {
           userIds.push(x.ID)
         })
-        const { code, message } = await batchDeleteUserByIds({ userIds: userIds })
-        if (code !== 200) {
+        let msg = ''
+        try {
+          const { message } = await batchDeleteUserByIds({ userIds: userIds })
+          msg = message
+        } finally {
           this.loading = false
-          return this.$message({
-            showClose: true,
-            message: message,
-            type: 'error'
-          })
         }
-        this.loading = false
+
         this.getTableData()
         this.$message({
           showClose: true,
-          message: message,
+          message: msg,
           type: 'success'
         })
       }).catch(() => {
@@ -414,23 +370,19 @@ wLXapv+ZfsjG7NgdawIDAQAB
 
     // 单个删除
     async singleDelete(Id) {
-      console.log('Id---')
-      console.log(Id)
       this.loading = true
-      const { code, message } = await batchDeleteUserByIds({ userIds: [Id] })
-      if (code !== 200) {
+      let msg = ''
+      try {
+        const { message } = await batchDeleteUserByIds({ userIds: [Id] })
+        msg = message
+      } finally {
         this.loading = false
-        return this.$message({
-          showClose: true,
-          message: message,
-          type: 'error'
-        })
       }
-      this.loading = false
+
       this.getTableData()
       this.$message({
         showClose: true,
-        message: message,
+        message: msg,
         type: 'success'
       })
     },
