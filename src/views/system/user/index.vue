@@ -222,7 +222,6 @@ wLXapv+ZfsjG7NgdawIDAQAB
       this.loading = true
       try {
         const { data } = await getUsers(this.params)
-        console.log('获取用户信息---')
         this.tableData = data.users
         this.total = data.total
       } finally {

@@ -50,27 +50,38 @@ service.interceptors.response.use(
   },
   error => {
     if (error.response.status === 401) {
-      MessageBox.confirm(
-        '登录超时, 重新登录或继续停留在当前页？',
-        '登录状态已失效',
-        {
-          confirmButtonText: '重新登录',
-          cancelButtonText: '继续停留',
-          type: 'warning'
-        }
-      ).then(() => {
-        // store.dispatch('user/resetToken').then(() => {
-        //   location.reload()
-        // })
-        store.dispatch('user/logout').then(() => {
-          location.reload()
+      if (error.response.data.message.indexOf('JWT认证失败') !== -1) {
+        MessageBox.confirm(
+          '登录超时, 重新登录或继续停留在当前页？',
+          '登录状态已失效',
+          {
+            confirmButtonText: '重新登录',
+            cancelButtonText: '继续停留',
+            type: 'warning'
+          }
+        ).then(() => {
+          // store.dispatch('user/resetToken').then(() => {
+          //   location.reload()
+          // })
+          store.dispatch('user/logout').then(() => {
+            location.reload()
+          })
         })
-      })
+      } else {
+        Message({
+          showClose: true,
+          message: error.response.data.message,
+          type: 'error',
+          duration: 5 * 1000
+        })
+        return Promise.reject(error)
+      }
     } else if (error.response.status === 403) {
       router.push({ path: '/401' })
     } else {
       Message({
-        message: error.message,
+        showClose: true,
+        message: error.response.data.message || error.message,
         type: 'error',
         duration: 5 * 1000
       })
